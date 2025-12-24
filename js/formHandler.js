@@ -1,30 +1,30 @@
+// Configuration de l'URL de l'API json-server
+const API_URL = 'http://localhost:3000/contacts';
+
+// État global de l'application
 let state = {
-    // Liste des contacts avec un contact par défaut
-    contacts: [
-        { id: 1, nom: 'Aubert', prenom: 'Jean-Luc', email: 'jean-luc.aubert@aelion.fr', telephone: '0123456789' }
-    ],
-    // État d'affichage de la modal (true = visible, false = cachée)
-    showModal: false
+    contacts: [],      // Liste des contacts chargés depuis le serveur
+    showModal: false,  // État d'affichage de la modal (true = visible, false = cachée)
+    loading: false     // Indicateur de chargement pour éviter les requêtes multiples
 };
 
-// Sélecteurs DOM
+// Sélecteurs DOM - Référence tous les éléments HTML utilisés dans le script
 const elements = {
-
     // Boutons
-    btnAdd: document.getElementById('btnAdd'),
-    btnClose: document.getElementById('btnClose'),
-    btnSubmit: document.getElementById('btnSubmit'),
+    btnAdd: document.getElementById('btnAdd'),       // Bouton "+" pour ouvrir la modal
+    btnClose: document.getElementById('btnClose'),   // Bouton "×" pour fermer la modal
+    btnSubmit: document.getElementById('btnSubmit'), // Bouton "Valider" du formulaire
     
     // Overlay de la modal
-    modalOverlay: document.getElementById('modalOverlay'),
+    modalOverlay: document.getElementById('modalOverlay'), // Fond sombre de la modal
     
     // Formulaire de la modal
-    contactForm: document.getElementById('contactForm'),
+    contactForm: document.getElementById('contactForm'), // Formulaire d'ajout de contact
     
     // Conteneur de la table des contacts
-    tableBody: document.getElementById('contactsTableBody'),
+    tableBody: document.getElementById('contactsTableBody'), // Corps du tableau (<tbody>)
     
-    // Champs de saisie du formulaire de la modal
+    // Champs de saisie du formulaire
     inputs: {
         nom: document.getElementById('nom'),
         prenom: document.getElementById('prenom'),
@@ -33,41 +33,111 @@ const elements = {
     }
 };
 
-// Créer un nouvel objet contact à partir des données saisies dans le formulaire
-const createContact = (formData) => ({
-    id: Date.now(), // Utiliser Date.now() pour générer un identifiant unique
-    ...formData // Copie toutes les propriétés de formData dans le nouvel objet (spread operator)
-});
+// === FONCTIONS API ===
 
-// Ajoute un contact à la liste des contacts
-const addContact = (contacts, newContact) => [...contacts, newContact];
-
-// Vérifie si les données saisies dans le formulaire sont valides
-const validateForm = (formData) => {
-    // Crée un objet vide pour stocker les erreurs
-    const errors = {};
-
-    // Vérifie que chaque champ n'est pas vide (après suppression des espaces)
-    if (!formData.nom.trim()) errors.nom = true;
-    if (!formData.prenom.trim()) errors.prenom = true;
-    if (!formData.email.trim()) errors.email = true;
-    if (!formData.telephone.trim()) errors.telephone = true;
-
-    // Vérifie que chaque champ n'est pas vide (après suppression des espaces)
-    return { isValid: Object.keys(errors).length === 0, errors };
+/**
+ * Récupère tous les contacts depuis le serveur json-server
+ * Effectue une requête GET vers l'API et met à jour l'état et l'affichage
+ */
+const fetchContacts = async () => {
+    try {
+        state.loading = true; // Active l'indicateur de chargement
+        
+        // Effectue une requête GET vers l'API
+        const response = await fetch(API_URL);
+        
+        // Vérifie si la requête a réussi
+        if (!response.ok) throw new Error('Erreur lors du chargement des contacts');
+        
+        // Convertit la réponse JSON en objet JavaScript
+        const contacts = await response.json();
+        
+        // Met à jour l'état avec les contacts récupérés
+        state.contacts = contacts;
+        
+        // Affiche les contacts dans le tableau
+        renderContacts(state.contacts);
+        
+    } catch (error) {
+        // En cas d'erreur, affiche un message dans la console
+        console.error('Erreur:', error);
+        // Informe l'utilisateur que le chargement a échoué
+        alert('Impossible de charger les contacts. Vérifiez que json-server est lancé.');
+    } finally {
+        // Désactive l'indicateur de chargement dans tous les cas
+        state.loading = false;
+    }
 };
 
-// Récupère les valeurs actuelles des champs du formulaire
+/**
+ * Ajoute un nouveau contact sur le serveur
+ * @param {Object} contactData - Données du contact (nom, prenom, email, telephone)
+ * @returns {Promise<Object>} Le contact créé avec son ID généré par le serveur
+ */
+const postContact = async (contactData) => {
+    try {
+        // Effectue une requête POST vers l'API
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' // Indique qu'on envoie du JSON
+            },
+            body: JSON.stringify(contactData) // Convertit l'objet en JSON
+        });
+        
+        // Vérifie si la requête a réussi
+        if (!response.ok) throw new Error('Erreur lors de l\'ajout du contact');
+        
+        // Récupère le contact créé avec son ID généré par json-server
+        const newContact = await response.json();
+        
+        return newContact;
+        
+    } catch (error) {
+        // En cas d'erreur, affiche un message dans la console
+        console.error('Erreur:', error);
+        // Informe l'utilisateur que l'ajout a échoué
+        alert('Impossible d\'ajouter le contact');
+        throw error; // Relance l'erreur pour la gérer dans handleSubmit
+    }
+};
+
+// === FONCTIONS UTILITAIRES ===
+
+/**
+ * Récupère les valeurs actuelles des champs du formulaire
+ * @returns {Object} Objet contenant les valeurs des champs (nom, prenom, email, telephone)
+ */
 const getFormData = () => ({
-    nom: elements.inputs.nom.value,
-    prenom: elements.inputs.prenom.value,
-    email: elements.inputs.email.value,
-    telephone: elements.inputs.telephone.value
+    nom: elements.inputs.nom.value.trim(),           // trim() supprime les espaces en début/fin
+    prenom: elements.inputs.prenom.value.trim(),
+    email: elements.inputs.email.value.trim(),
+    telephone: elements.inputs.telephone.value.trim()
 });
 
-// Génère le HTML pour afficher une ligne de contact dans le tableau
+/**
+ * Réinitialise le formulaire à son état initial
+ * Vide tous les champs et retire les classes d'erreur
+ */
+const clearForm = () => {
+    elements.contactForm.reset(); // Vide tous les champs du formulaire
+    
+    // Retire la classe 'error' de tous les champs
+    Object.values(elements.inputs).forEach(input => {
+        input.classList.remove('error');
+    });
+    
+    // Désactive le bouton "Valider" (sera réactivé quand le formulaire sera valide)
+    elements.btnSubmit.disabled = true;
+};
+
+/**
+ * Génère le HTML pour afficher une ligne de contact dans le tableau
+ * @param {Object} contact - Objet contact avec ses propriétés (id, nom, prenom, email, telephone)
+ * @returns {string} Code HTML de la ligne (<tr>)
+ */
 const renderContact = (contact) => `
-    <tr>
+    <tr data-id="${contact.id}">
         <td>${contact.nom}</td>
         <td>${contact.prenom}</td>
         <td><a href="mailto:${contact.email}" class="email-link">${contact.email}</a></td>
@@ -75,117 +145,126 @@ const renderContact = (contact) => `
     </tr>
 `;
 
-// Met à jour l'affichage du tableau avec tous les contacts
+/**
+ * Met à jour l'affichage du tableau avec tous les contacts
+ * @param {Array} contacts - Tableau des contacts à afficher
+ */
 const renderContacts = (contacts) => {
-    elements.tableBody.innerHTML = contacts.map(renderContact).join('');
+    // Si aucun contact, affiche un message
+    if (contacts.length === 0) {
+        elements.tableBody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 30px; color: #666;">
+                    Aucun contact à afficher
+                </td>
+            </tr>
+        `;
+    } else {
+        // Génère le HTML pour chaque contact et les assemble
+        elements.tableBody.innerHTML = contacts.map(renderContact).join('');
+    }
 };
 
-// Réinitialise le formulaire et retire toutes les classes d'erreur
-const clearForm = () => {
-    // Réinitialise tous les champs du formulaire
-    elements.contactForm.reset();
+// === GESTION DE LA MODAL ===
 
-    // Parcourt tous les inputs et retire la classe 'error'
-    Object.values(elements.inputs).forEach(input => {
-        input.classList.remove('error');
-    });
-};
-
-// Affiche les erreurs dans les champs du formulaire
-const showErrors = (errors) => {
-    // Parcourt tous les champs
-    Object.keys(elements.inputs).forEach(key => {
-        if (errors[key]) { // Si le champ a une erreur, ajoute la classe CSS 'error'
-            elements.inputs[key].classList.add('error');
-        } else { // Sinon, retire la classe 'error'
-            elements.inputs[key].classList.remove('error');
-        }
-    });
-};
-
-// Affiche un tooltip temporaire près d'un élément
-const showTooltip = (element, message) => {
-    // Crée un nouvel élément div pour le tooltip
-    const tooltip = document.createElement('div');
-    tooltip.className = 'tooltip';
-    tooltip.textContent = message;
-    document.body.appendChild(tooltip);
-
-    // Calcule la position du tooltip pour qu'il soit centré au-dessus de l'élément
-    const rect = element.getBoundingClientRect();
-    tooltip.style.left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + 'px';
-    tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
-
-    // Supprime automatiquement le tooltip après 2 secondes
-    setTimeout(() => tooltip.remove(), 2000);
-};
-
-// Gestionnaires d'événements
+/**
+ * Ouvre la modal d'ajout de contact
+ * Met à jour l'état, affiche la modal et réinitialise le formulaire
+ */
 const openModal = () => {
     state.showModal = true; // Met à jour l'état
     elements.modalOverlay.classList.add('active'); // Affiche la modal via CSS
     clearForm(); // Réinitialise le formulaire
 };
 
-// Ferme la modal d'ajout de contact
+/**
+ * Ferme la modal d'ajout de contact
+ * Met à jour l'état, cache la modal et réinitialise le formulaire
+ */
 const closeModal = () => {
     state.showModal = false; // Met à jour l'état
     elements.modalOverlay.classList.remove('active'); // Cache la modal via CSS
     clearForm(); // Réinitialise le formulaire
 };
 
-// Gère la soumission du formulaire d'ajout de contact
-const handleSubmit = (e) => {
-    e.preventDefault();
+// === GESTIONNAIRES D'ÉVÉNEMENTS ===
+
+/**
+ * Gère la soumission du formulaire d'ajout de contact
+ * @param {Event} e - Événement de soumission du formulaire
+ */
+const handleSubmit = async (e) => {
+    e.preventDefault(); // Empêche le rechargement de la page
     
-    // Récupère les données saisies dans le formulaire
+    // Si un chargement est en cours, on ignore la soumission
+    if (state.loading) return;
+    
+    // Récupère les données du formulaire
     const formData = getFormData();
-
-    // Vérifie que les données saisies sont valides
-    const { isValid, errors } = validateForm(formData);
-
-    if (!isValid) {
-        showErrors(errors);
-        showTooltip(elements.btnSubmit, "Tous les champs doivent être remplis !");
+    
+    // Validation côté client (double vérification)
+    if (!formData.nom || !formData.prenom || !formData.email || !formData.telephone) {
+        alert('Tous les champs sont obligatoires');
         return;
     }
-
-    // Crée un nouveau contact à partir des données saisies
-    const newContact = createContact(formData);
-    state.contacts = addContact(state.contacts, newContact);
     
-    // Met à jour l'affichage du tableau avec les nouveaux contacts
-    renderContacts(state.contacts);
-
-    // Ferme la modal
-    closeModal();
+    try {
+        // Désactive le bouton pendant l'envoi pour éviter les doubles soumissions
+        elements.btnSubmit.disabled = true;
+        elements.btnSubmit.textContent = 'Envoi...'; // Indication visuelle du chargement
+        
+        // Envoie le contact au serveur json-server
+        const newContact = await postContact(formData);
+        
+        // Ajoute le nouveau contact à l'état local (sans modifier le tableau original)
+        state.contacts = [...state.contacts, newContact];
+        
+        // Met à jour l'affichage du tableau
+        renderContacts(state.contacts);
+        
+        // Ferme la modal après un ajout réussi
+        closeModal();
+        
+    } catch (error) {
+        // En cas d'erreur, réactive le bouton pour permettre une nouvelle tentative
+        elements.btnSubmit.disabled = false;
+        elements.btnSubmit.textContent = 'Valider';
+    }
 };
 
-// Écouteurs d'événements
-elements.btnAdd.addEventListener('click', openModal); // Ouvre la modal quand on clique sur le bouton "+"
-elements.btnClose.addEventListener('click', closeModal); // Ferme la modal quand on clique sur le bouton "×"
+// === ÉCOUTEURS D'ÉVÉNEMENTS ===
+
+// Ouvre la modal quand on clique sur le bouton "+"
+elements.btnAdd.addEventListener('click', openModal);
+
+// Ferme la modal quand on clique sur le bouton "×"
+elements.btnClose.addEventListener('click', closeModal);
 
 // Ferme la modal quand on clique sur l'overlay (fond sombre)
 elements.modalOverlay.addEventListener('click', (e) => {
+    // Vérifie que le clic est bien sur l'overlay et non sur la modal elle-même
     if (e.target === elements.modalOverlay) closeModal();
 });
 
-// Gère la soumission du formulaire d'ajout de contact
+// Gère la soumission du formulaire
 elements.contactForm.addEventListener('submit', handleSubmit);
 
-// Retirer l'erreur lors de la saisie
+// Retire la classe 'error' d'un champ quand l'utilisateur commence à taper
 Object.values(elements.inputs).forEach(input => {
     input.addEventListener('input', () => {
         input.classList.remove('error');
     });
 });
 
-// Active le bouton "Valider" lorsque le formulaire est valide
+// Active/désactive le bouton "Valider" en fonction de la validité du formulaire
 elements.contactForm.addEventListener('input', () => {
     // checkValidity() vérifie automatiquement tous les attributs HTML5 (required, type="email", etc.)
-    // Le bouton est désactivé si le formulaire n'est pas valide
     elements.btnSubmit.disabled = !elements.contactForm.checkValidity();
+    // Remet le texte du bouton à "Valider" si on modifie le formulaire après une erreur
+    elements.btnSubmit.textContent = 'Valider';
 });
 
-// Affiche les contacts initiaux au chargement de la page
-renderContacts(state.contacts);
+// === INITIALISATION ===
+
+// Charge tous les contacts depuis le serveur au démarrage de l'application
+fetchContacts();
