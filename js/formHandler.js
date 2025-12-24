@@ -71,8 +71,6 @@ const fetchContacts = async () => {
 
 /**
  * Ajoute un nouveau contact sur le serveur
- * @param {Object} contactData - Données du contact (nom, prenom, email, telephone)
- * @returns {Promise<Object>} Le contact créé avec son ID généré par le serveur
  */
 const postContact = async (contactData) => {
     try {
@@ -106,7 +104,6 @@ const postContact = async (contactData) => {
 
 /**
  * Récupère les valeurs actuelles des champs du formulaire
- * @returns {Object} Objet contenant les valeurs des champs (nom, prenom, email, telephone)
  */
 const getFormData = () => ({
     nom: elements.inputs.nom.value.trim(),           // trim() supprime les espaces en début/fin
@@ -133,8 +130,6 @@ const clearForm = () => {
 
 /**
  * Génère le HTML pour afficher une ligne de contact dans le tableau
- * @param {Object} contact - Objet contact avec ses propriétés (id, nom, prenom, email, telephone)
- * @returns {string} Code HTML de la ligne (<tr>)
  */
 const renderContact = (contact) => `
     <tr data-id="${contact.id}">
@@ -147,7 +142,6 @@ const renderContact = (contact) => `
 
 /**
  * Met à jour l'affichage du tableau avec tous les contacts
- * @param {Array} contacts - Tableau des contacts à afficher
  */
 const renderContacts = (contacts) => {
     // Si aucun contact, affiche un message
