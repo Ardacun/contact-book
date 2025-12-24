@@ -180,5 +180,12 @@ Object.values(elements.inputs).forEach(input => {
     });
 });
 
+// Active le bouton "Valider" lorsque le formulaire est valide
+elements.contactForm.addEventListener('input', () => {
+    // checkValidity() vérifie automatiquement tous les attributs HTML5 (required, type="email", etc.)
+    // Le bouton est désactivé si le formulaire n'est pas valide
+    elements.btnSubmit.disabled = !elements.contactForm.checkValidity();
+});
+
 // Affiche les contacts initiaux au chargement de la page
 renderContacts(state.contacts);
