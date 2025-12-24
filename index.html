@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Book</title>
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Contact book</h1>
+            <button class="btn-add" id="btnAdd">+</button>
+        </div>
+
+        <div class="contacts-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                    </tr>
+                </thead>
+                <tbody id="contactsTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            (c) 2025 - Acme Corp.
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Nom:</div>
+                <button class="btn-close" id="btnClose">×</button>
+            </div>
+
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="nom">Nom:</label>
+                    <input type="text" id="nom" name="nom" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prenom">Prénom:</label>
+                    <input type="text" id="prenom" name="prenom" placeholder="Stylish Opossum" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="telephone">Téléphone:</label>
+                    <input type="tel" id="telephone" name="telephone" required>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btnSubmit">Valider</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/formHandler.js"></script>
+</body>
+</html>
