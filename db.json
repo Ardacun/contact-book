@@ -1,0 +1,18 @@
+{
+  "contacts": [
+    {
+      "id": "a54f",
+      "nom": "D'acunto",
+      "prenom": "Adrien",
+      "email": "adriendacunto@limayrac.fr",
+      "telephone": "0489489"
+    },
+    {
+      "id": "2bc8",
+      "nom": "Cedric",
+      "prenom": "Robert",
+      "email": "cedric@fezfez.fr",
+      "telephone": "1094849"
+    }
+  ]
+}
